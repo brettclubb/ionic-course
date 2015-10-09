@@ -4,7 +4,13 @@ angular.module('songhop.controllers', ['ionic', 'songhop.services'])
 /*
 Controller for the discover page
 */
-.controller('DiscoverCtrl', function($scope, $timeout, User) {
+.controller('DiscoverCtrl', function($scope, $timeout, User, Recommendations) {
+	//get our first songs
+	Recommendations.getNextSongs()
+		.then(function(){
+			$scope.currentSong = Recommendations.queue[0];
+		});
+	
 	// our first three songs
 	$scope.songs = [
 		{
@@ -27,10 +33,17 @@ Controller for the discover page
 		}
 	];
 	
-	$scope.currentSong = angular.copy($scope.songs[0]);
+	$scope.currentSong;
 	
 	// fired when we favorite / skip a song.
 	$scope.sendFeedback = function (bool) {
+		//prepare the next song
+		Recommendations.nextSong();
+		
+		$timeout(function(){
+			//$timeout to allow animation to complete
+			$scope.currentSong = Recommendations.queue[0];
+		}, 250);
 		
 		//first, add to favorites if they favorited
 		if(bool) User.addSongToFavorites($scope.currentSong);
@@ -42,11 +55,19 @@ Controller for the discover page
 		$timeout(function() {
 			// $timeout to allow animation to complete before changing to next song
 			// set the current song to one of our three songs
-			var randomSong = Math.round(Math.random() * ($scope.songs.length - 1));
+			var randomSong = Math.round(Math.random() * (Recommendations.queue.length - 1));
 		
 			// update current song in scope
-			$scope.currentSong = angular.copy($scope.songs[randomSong]);
+			$scope.currentSong = angular.copy(Recommendations.queue[randomSong]);
 		}, 250);
+	}
+	
+	$scope.nextAlbumImg = function(){
+		if(Recommendations.queue.length > 1){
+			return Recommendations.queue[1].image_large;
+		}
+		
+		return '';
 	}
 })
 
